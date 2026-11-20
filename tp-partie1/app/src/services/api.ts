@@ -45,7 +45,7 @@ export default {
   },
 
   getPlats(categorieId?: number | null): Promise<Plat[]> {
-    const chemin = categorieId === null ? '/plats' : '/plats?categorie=' + categorieId;
+    const chemin = categorieId == null ? '/plats' : '/plats?categorie=' + categorieId;
 
     return requete(chemin);
   },
