@@ -21,7 +21,7 @@
               <p>{{ l.plat.prix }}</p>
             </ion-label>
 
-              <ion-text color="primary">{{ formatAriary(l.plat.prix* l.quantite) }}</ion-text>
+              <ion-text color="primary">{{ formatAriary(Number(l.plat.prix)*l.quantite) }}</ion-text>
 
             <ion-button slot="end" fill="clear" :disabled="!l.plat.disponible"
               @click.stop.prevent="changerQuantite(l.plat.id,-1)">
@@ -54,20 +54,20 @@
   </ion-page>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonText,
   IonButtons, IonBackButton,IonButton,IonIcon,IonLabel,IonList,IonItem,
  IonInput,loadingController,toastController,alertController,useIonRouter} from '@ionic/vue';
 import { usePanier } from '@/composables/usePanier';
 import { addCircleOutline,removeCircleOutline } from 'ionicons/icons';
 import { formatAriary } from '@/utils/format';
-import api from '@/services/api';
+import api, { ErreurApi } from '@/services/api';
 import { ref } from 'vue';
 
 const {lignes,changerQuantite,total} = usePanier();
 const ionRouter = useIonRouter();
 const table = ref('');
-const erreurTable = ref(null);
+const erreurTable = ref<string | undefined>(undefined);
 const envoi = ref(false);
 
 async function confirmer() {
@@ -91,7 +91,7 @@ async function envoyer(){
 
   const load = await loadingController.create({
     message:'Envoi de la commande...',
-    duration: 1500, position: 'top', color: 'secondary',
+    duration: 1500,
   });
   await load.present();
   
@@ -127,14 +127,16 @@ async function envoyer(){
 
   
   } catch (e) {
-    if(e.status === 422 || e.response?.status === 422){
-      erreurTable.value = e.response?.data?.message || e.message || "lala";
-    }else{
+    if(e instanceof ErreurApi){
+      if(e.statut === 422){
+        erreurTable.value = e.message || "lala";
+      }else{
       const toast = await toastController.create({
-    message: e.message,
-    duration: 1500, position: 'top', color: 'danger',
-    });
-    await toast.present();
+      message: e.message,
+      duration: 1500, position: 'top', color: 'danger',
+      });
+      await toast.present();
+      }
     }
   }finally{
     await load.dismiss();

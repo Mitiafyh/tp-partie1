@@ -18,18 +18,18 @@
       <ion-text color="danger">
         <p>{{ erreur }}</p>
       </ion-text>
-      <ion-button expand="block" @click="charger">Réessayer</ion-button>
+      <ion-button expand="block" @click="chargerPlat">Réessayer</ion-button>
     </div>
 
          <ion-card v-if="plat">
             <ion-card-header>
                 <ion-card-title>{{ plat.nom }}</ion-card-title>
-                <ion-card-subtitle>{{ plat.categorie.nom }}</ion-card-subtitle>
+                <ion-card-subtitle>{{ plat.categorie?.nom }}</ion-card-subtitle>
             </ion-card-header>
             <ion-card-content>
                 <p><strong>Description :</strong> {{ plat.description }}</p>
-                <p><strong>Prix :</strong> {{ formatAriary(plat.prix) }}</p>
-                <p v-if="riz">Avec du riz : {{ formatAriary(plat.prix + riz.prix) }}</p>
+                <p><strong>Prix :</strong> {{ formatAriary(Number(plat.prix)) }}</p>
+                <p v-if="riz">Avec du riz : {{ formatAriary(Number(plat.prix) + Number(riz.prix)) }}</p>
 
                 <p><strong>Disponibilité :</strong> {{ plat.disponible ? 'Disponible' : 'Épuisé' }}</p>
             </ion-card-content>
@@ -48,25 +48,26 @@
     </ion-page>
 
 </template>
-<script setup>
+<script setup lang="ts">
 import { IonPage,IonButtons,IonBackButton,IonCard,IonCardContent,
  IonHeader,IonToolbar,IonContent,IonCardHeader,IonCardSubtitle,
 IonCardTitle,IonButton,IonText,IonSpinner,useIonRouter } from '@ionic/vue';
 import { useRoute } from 'vue-router';
 import { onMounted ,ref} from 'vue';
-import api from '@/services/api';
+import api, { ErreurApi } from '@/services/api';
 import { formatAriary } from '@/utils/format';
 import { usePanier } from '@/composables/usePanier';
+import type { Plat } from '@/types/gargote';
 
 const route = useRoute();
-const id = route.params.id;
-const plat = ref(null);
+const id = Number(route.params.id);
+const plat = ref<Plat | null>(null);
 const chargement = ref(true);
-const erreur = ref(null);
+const erreur = ref<string | null>(null);
 
 const ionRouter = useIonRouter();
 
-const riz = ref(null);
+const riz = ref<Plat | null>(null);
 
 
 // ionRouter.navigate('/tabs/commandes','forward','replace');
@@ -78,18 +79,20 @@ async function chargerPlat() {
   try {
     plat.value = await api.getPlat(id);
   } catch (e) {
-    if(e.statut === 404){
-        plat.value = null;
-    }else{
-        erreur.value = "Impossible de joindre l'API. Est-elle lancée ?";
-        console.error(e);
+    if(e instanceof ErreurApi){
+        if(e.statut === 404){
+            plat.value = null;
+        }else{
+            erreur.value = "Impossible de joindre l'API. Est-elle lancée ?";
+            console.error(e);
+        }
     }
 
   } finally {
     chargement.value = false;
   }
 }
-async function ajouterAuPanier(plat) {
+async function ajouterAuPanier(plat: Plat) {
  await usePanier().ajouter(plat);
  ionRouter.back();
 }

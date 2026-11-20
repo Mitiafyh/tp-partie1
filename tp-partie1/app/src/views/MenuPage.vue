@@ -44,11 +44,11 @@
           <ion-item :router-link="`/tabs/menu/${plat.id}`" v-for="plat in platsFiltres" :key="plat.id">
             <ion-label>
               <h2>{{ plat.nom }}</h2>
-              <p>{{ plat.categorie.nom }}</p>
+              <p>{{ plat.categorie?.nom }}</p>
               <p>{{ plat.description }}</p>
 
             </ion-label>
-              <ion-text color="primary">{{ formatAriary(plat.prix) }}</ion-text>
+              <ion-text color="primary">{{ formatAriary(Number(plat.prix)) }}</ion-text>
               <ion-badge v-if="!plat.disponible" color="medium">Épuisé</ion-badge>
 
             <ion-button slot="end" fill="clear" :disabled="!plat.disponible"
@@ -64,27 +64,29 @@
   </ion-page>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted ,computed,onUnmounted} from 'vue';
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
   IonList, IonItem, IonLabel, IonNote, IonSpinner, IonText,
    IonButton,IonSearchbar,IonBadge,IonSegmentButton,IonSegment,
    IonRefresher,IonRefresherContent,onIonViewWillEnter,onIonViewDidLeave,
-  IonIcon,toastController
+  IonIcon,toastController,
+  type RefresherCustomEvent
 } from '@ionic/vue';
 import api from '@/services/api';
 import { formatAriary } from '@/utils/format';
 import { addCircleOutline } from 'ionicons/icons';
 import { usePanier } from '@/composables/usePanier';
+import type { Categorie, Plat } from '@/types/gargote';
 
 
-const plats = ref([]);
+const plats = ref<Plat[]>([]);
 const chargement = ref(true);
-const erreur = ref(null);
+const erreur = ref<string | null>(null);
 const recherche = ref('');
 const categorieChoisie = ref('toutes');
-const categories = ref([]);
+const categories = ref<Categorie[]>([]);
 const platsFiltres = computed(() =>{
   const terme = recherche.value.toLowerCase().trim();
   if(!terme) return plats.value
@@ -113,12 +115,12 @@ async function charger() {
     chargement.value = false;
   }
 }
-async function rafraichir(event) {
+async function rafraichir(event: RefresherCustomEvent) {
   await charger();
   event.target.complete(); // arrête l'animation
 }
 
-async function ajouterAuPanier(plat) {
+async function ajouterAuPanier(plat: Plat) {
   await usePanier().ajouter(plat);
   const toast = await toastController.create({
   message: `${plat.nom} ajouté au panier`,

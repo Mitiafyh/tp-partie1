@@ -22,9 +22,10 @@
         <ion-button expand="block" @click="charger">Réessayer</ion-button>
       </div>
 
-      <div v-if="commandes.length==0">
+      <div v-else-if="commandes.length==0">
           <p>Aucune commande pour l'instant</p>
       </div>
+
 
       <ion-list v-else>
         <div v-for="c in commandes" :key="c.id">
@@ -47,21 +48,25 @@
   </ion-page>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonText,
-  IonItem,IonLabel,IonList,IonButton,IonSpinner,IonRefresher,IonRefresherContent
+  IonItem,IonLabel,IonList,IonButton,IonSpinner,IonRefresher,IonRefresherContent,
+  type RefresherCustomEvent
  } from '@ionic/vue';
 import { computed, onMounted,ref } from 'vue';
 import { formatAriary, formatDate } from '@/utils/format';
 import api from '@/services/api';
+import type { Commande } from '@/types/gargote';
 
 const chargement = ref(true);
-const erreur = ref(null);
-const commandes = ref([]);
+const erreur = ref<string | null>(null);
+const commandes = ref(<Commande[]>[]);
 
 async function charger(){
   chargement.value = true;
+  // erreur.value = null;
   erreur.value = null;
+
 
   try {
   commandes.value = await api.getCommandes();
@@ -72,7 +77,7 @@ async function charger(){
     chargement.value = false;
   }
 }
-async function rafraichir(event) {
+async function rafraichir(event: RefresherCustomEvent) {
   await charger();
   event.target.complete(); // arrête l'animation
 }
