@@ -30,10 +30,6 @@ async function requete<T>(chemin: string, options: RequestInit = {}): Promise<T>
   const donnees = reponse.status === 204 ? null : await reponse.json();
 
   if (!reponse.ok) {
-    // const erreur = new Error(donnees?.message ?? `Erreur HTTP ${reponse.status}`);
-    // erreur.statut = reponse.status;
-    // erreur.details = donnees?.erreurs ?? {};
-    // throw erreur;
     throw new ErreurApi(donnees?.message  ?? `Erreur HTTP ${reponse.status}`, reponse.status, donnees?.erreurs ?? {});
   }
   return donnees as T;

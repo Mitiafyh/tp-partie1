@@ -1,8 +1,10 @@
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import type {LignePanier,Plat} from '@/types/gargote';
+import { lire,ecrire } from '@/services/stockage';
 
 // Déclaré EN DEHORS de la fonction : un seul panier pour toute l'application
-const lignes = ref(<LignePanier[]>([])); // chaque ligne : { plat, quantite }
+const lignes = ref<LignePanier[]>([]); // chaque ligne : { plat, quantite }
+let surveillanceActive = false;
 
 export function usePanier() {
     function ajouter(plat: Plat) {
@@ -50,4 +52,39 @@ export function usePanier() {
     });
 
     return { lignes, ajouter, changerQuantite, vider, nombreArticles, total };
+}
+
+export function estPanier(x: unknown): x is LignePanier[]{
+    if(!Array.isArray(x)){
+        return false;
+    }
+    return x.every((item) => {
+        if(typeof item !== 'object' || item === null){
+            return false;
+        }
+        if(!('quantite' in item) || typeof item.quantite !== 'number' || Number.isNaN(item.quantite)){
+            return false;
+        }
+        if (!('plat' in item) || typeof item.plat !== 'object' || item.plat === null){
+            return false;
+        }
+        const plat = item.plat as Record<string, unknown>;
+
+        return ('id' in plat && typeof plat.id === 'number'
+                && 'prix' in plat && typeof plat.prix === 'string');
+
+    });
+}
+
+export async function restaurerPanier(): Promise<void>{
+    lignes.value = await lire<LignePanier[]>('panier', [], estPanier);
+
+    if (!surveillanceActive) {
+    surveillanceActive = true;
+    watch(
+      lignes,(nv) => {
+         ecrire('panier', nv);
+      },{ deep: true }
+    );
+  }
 }

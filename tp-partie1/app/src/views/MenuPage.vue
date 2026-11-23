@@ -13,6 +13,7 @@
       <ion-segment-button v-for="c in categories" :key="c.id" :value="String(c.id)">
         <ion-label>{{ c.nom }}</ion-label>
       </ion-segment-button>
+      <ion-segment-button value="favoris" ><ion-label>Favoris</ion-label></ion-segment-button>
     </ion-segment>
     
   </ion-header>
@@ -46,10 +47,12 @@
               <h2>{{ plat.nom }}</h2>
               <p>{{ plat.categorie?.nom }}</p>
               <p>{{ plat.description }}</p>
-
             </ion-label>
-              <ion-text color="primary">{{ formatAriary(Number(plat.prix)) }}</ion-text>
-              <ion-badge v-if="!plat.disponible" color="medium">Épuisé</ion-badge>
+            <ion-text color="primary">{{ formatAriary(Number(plat.prix)) }}</ion-text>
+            <ion-badge v-if="!plat.disponible" color="medium">Épuisé</ion-badge>
+            <ion-button slot="end" fill="clear" color="danger" @click.stop.prevent="basculer(plat.id)">
+              <ion-icon slot="icon-only" :icon="estFavori(plat.id) ? heart : heartOutline" />
+            </ion-button>
 
             <ion-button slot="end" fill="clear" :disabled="!plat.disponible"
               @click.stop.prevent="ajouterAuPanier(plat)">
@@ -79,6 +82,8 @@ import { formatAriary } from '@/utils/format';
 import { addCircleOutline } from 'ionicons/icons';
 import { usePanier } from '@/composables/usePanier';
 import type { Categorie, Plat } from '@/types/gargote';
+import { basculer, estFavori,favoris } from '@/composables/useFavoris';
+import { heart, heartOutline } from 'ionicons/icons';
 
 
 const plats = ref<Plat[]>([]);
@@ -88,9 +93,13 @@ const recherche = ref('');
 const categorieChoisie = ref('toutes');
 const categories = ref<Categorie[]>([]);
 const platsFiltres = computed(() =>{
+  const favorisIds = favoris.value;
   const terme = recherche.value.toLowerCase().trim();
-  if(!terme) return plats.value
-  return plats.value.filter((p) => p.nom.toLowerCase().includes(terme));
+  return plats.value.filter((p) => {
+   const correspondRecherche = p.nom.toLowerCase().includes(terme);
+   const correspondFavoris = categorieChoisie.value === 'favoris' ? favorisIds.includes(p.id) : true;
+    return correspondRecherche && correspondFavoris;
+  });
 });
 
 
@@ -103,7 +112,7 @@ async function charger() {
   chargement.value = true;
   erreur.value = null;
   try {
-    if(categorieChoisie.value === 'toutes' ){
+    if(categorieChoisie.value === 'toutes' || categorieChoisie.value === 'favoris'){
       plats.value = await api.getPlats();
     }else{
       plats.value = await api.getPlats(Number(categorieChoisie.value));

@@ -23,6 +23,8 @@
 
          <ion-card v-if="plat">
             <ion-card-header>
+                <ion-button @click="prendrePhoto()"> Photographier mon plat</ion-button>
+                <img v-if="photo" :src="photo" alt="Photo du plat" />.
                 <ion-card-title>{{ plat.nom }}</ion-card-title>
                 <ion-card-subtitle>{{ plat.categorie?.nom }}</ion-card-subtitle>
             </ion-card-header>
@@ -58,6 +60,7 @@ import api, { ErreurApi } from '@/services/api';
 import { formatAriary } from '@/utils/format';
 import { usePanier } from '@/composables/usePanier';
 import type { Plat } from '@/types/gargote';
+import { Camera } from '@capacitor/camera';
 
 const route = useRoute();
 const id = Number(route.params.id);
@@ -68,11 +71,19 @@ const erreur = ref<string | null>(null);
 const ionRouter = useIonRouter();
 
 const riz = ref<Plat | null>(null);
-
+const photo = ref<string | undefined>(undefined);
 
 // ionRouter.navigate('/tabs/commandes','forward','replace');
 
-
+async function prendrePhoto() {
+  try {
+    const resultat = await Camera.takePhoto({ quality: 60, targetWidth: 800 });
+    photo.value = resultat.webPath;
+  } catch {
+    // l'utilisateur a annulé
+    
+  }
+}
 async function chargerPlat() {
   chargement.value = true;
   erreur.value = null;
